@@ -1,6 +1,6 @@
 baseURL = 'https://a-little.pages.dev/'
-languageCode = 'en-us'
-title = 'My New Hugo Site'
+languageCode = 'zh-tw'
+title = '線上預約系統'
 theme = 'PaperMod'
 
 [markup]
