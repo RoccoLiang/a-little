@@ -48,8 +48,8 @@ draft = false
     const data = Object.fromEntries(formData.entries());
     
     try {
-      // 之後我們會替換為 Cloudflare Worker 的實際網址
-      const response = await fetch("https://dummy.workers.dev", {
+      // 呼叫 Cloudflare Pages Functions
+      const response = await fetch("/api/booking", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
