@@ -316,13 +316,14 @@
 }
 .success-icon {
   width: 60px; height: 60px;
-  background: #22c55e;
   border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   margin: 0 auto 16px;
   font-size: 1.8rem;
   color: white;
+  background: #22c55e;
 }
+.success-icon.pending-icon { background: #f59e0b; }
 #success-card h3 {
   font-size: 1.15rem;
   margin-bottom: 6px;
@@ -445,26 +446,22 @@
       <button type="submit" class="submit-btn" id="submit-btn">送出預約</button>
     </form>
 
-    <!-- 成功畫面（送出後替換表單）-->
+    <!-- 待確認畫面（送出後替換表單）-->
     <div id="success-card">
-      <div class="success-icon">✓</div>
-      <h3>預約申請已送出！</h3>
-      <p>我們收到後會盡快與您確認，<br>請留意電話或信箱的聯絡通知。</p>
+      <div class="success-icon pending-icon">⏳</div>
+      <h3>申請已送出，等待確認中</h3>
+      <p>我們已寄送收到通知到您的信箱。<br>店家確認後會再寄發正式確認信，<br>請留意信箱。</p>
       <div class="success-detail" id="success-detail"></div>
       <button class="new-booking-btn" onclick="resetBooking()">再預約一次</button>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // =====================================================
 // ★ 設定區
 // =====================================================
-const EMAILJS_PUBLIC_KEY  = "ydXq_gMt59U_Zfwz9";
-const EMAILJS_SERVICE_ID  = "service_4qxqcjt";
-const EMAILJS_TEMPLATE_ID = "template_jsrd2gm";
-const APPS_SCRIPT_URL     = "YOUR_APPS_SCRIPT_URL"; // ← 部署 Apps Script 後填入
+const APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL"; // ← 部署 Apps Script 後填入
 
 // 營業設定
 const OPEN_HOUR        = 8;
@@ -473,8 +470,6 @@ const SLOT_MINS        = 60;
 const SURCHARGE_HOUR   = 19;
 const SURCHARGE_AMOUNT = 200;
 // =====================================================
-
-emailjs.init(EMAILJS_PUBLIC_KEY);
 
 const SERVICES = {
   nail: {
@@ -689,9 +684,12 @@ document.getElementById("booking-form").addEventListener("submit", async functio
     alert("請先選擇日期與時段！"); return;
   }
 
-  // 按鈕變成載入狀態
-  submitBtn.disabled   = true;
-  submitBtn.innerHTML  = `<span class="btn-spinner"></span> 傳送中…`;
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL") {
+    alert("尚未設定 Apps Script 網址，請聯絡店家。"); return;
+  }
+
+  submitBtn.disabled  = true;
+  submitBtn.innerHTML = `<span class="btn-spinner"></span> 傳送中…`;
 
   const name     = document.getElementById("name").value.trim();
   const email    = document.getElementById("email").value.trim();
@@ -701,42 +699,28 @@ document.getElementById("booking-form").addEventListener("submit", async functio
   const service  = document.getElementById("service").value;
   const notes    = document.getElementById("notes").value.trim() || "無";
   const hour     = parseInt(selectedTime);
-  const hasSurcharge  = hour >= SURCHARGE_HOUR;
-  const surchargeText = hasSurcharge ? `是（+NT$${SURCHARGE_AMOUNT}）` : "否";
-
-  // Google Calendar 連結
-  const startTime = new Date(`${selectedDate}T${selectedTime}:00`);
-  const endTime   = new Date(startTime.getTime() + SLOT_MINS * 60 * 1000);
-  const fmt       = d => d.toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
-  const gcalText    = encodeURIComponent(`預約 ${category}：${name}`);
-  const gcalDetails = encodeURIComponent(
-    `服務：${category} - ${service}\n姓名：${name}\n電話：${phone}\n信箱：${email}${hasSurcharge ? `\n⚠️ 加班費：NT$${SURCHARGE_AMOUNT}` : ''}\n備註：${notes}`
-  );
-  const gcalLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalText}&dates=${fmt(startTime)}/${fmt(endTime)}&details=${gcalDetails}`;
+  const hasSurcharge = hour >= SURCHARGE_HOUR;
 
   const dateDisplay = new Date(`${selectedDate}T00:00:00`).toLocaleDateString("zh-TW", {
     year: "numeric", month: "long", day: "numeric", weekday: "short"
   });
 
-  // 1. 寫入 Google Sheets
-  if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== "YOUR_APPS_SCRIPT_URL") {
-    try {
-      const params = new URLSearchParams({ action:"book", date:selectedDate, time:selectedTime, name, phone, email, category, service, notes });
-      const res    = await fetch(`${APPS_SCRIPT_URL}?${params}`);
-      const data   = await res.json();
-      if (data.success) { bookedSet.add(`${selectedDate}_${selectedTime}`); renderCalendar(); }
-    } catch (err) { console.warn("Google Sheets 寫入失敗：", err); }
-  }
-
-  // 2. EmailJS 通知
   try {
-    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      name, email, phone, category, service,
-      date: dateDisplay, time: selectedTime,
-      surcharge: surchargeText, notes, gcal_link: gcalLink,
+    const params = new URLSearchParams({
+      action: "book",
+      date: selectedDate, time: selectedTime,
+      name, phone, email, category, service, notes
     });
+    const res  = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+    const data = await res.json();
 
-    // 顯示成功畫面
+    if (!data.success) throw new Error(data.error || "unknown error");
+
+    // 佔用時段（本地立即反灰）
+    bookedSet.add(`${selectedDate}_${selectedTime}`);
+    renderCalendar();
+
+    // 顯示待確認畫面
     document.getElementById("booking-form").style.display = "none";
     document.getElementById("selected-summary").style.display = "none";
 
@@ -744,20 +728,20 @@ document.getElementById("booking-form").addEventListener("submit", async functio
       📅 <strong>${dateDisplay}</strong><br>
       🕐 <strong>${selectedTime}</strong><br>
       ✂️ <strong>${category}｜${service}</strong><br>
-      👤 ${name}　📞 ${phone}`;
+      👤 ${name}　📞 ${phone}<br>
+      📧 ${email}`;
     if (hasSurcharge) detailHtml += `<br>⚠️ <span style="color:#f59e0b;">加班費 NT$${SURCHARGE_AMOUNT}</span>`;
 
     document.getElementById("success-detail").innerHTML = detailHtml;
-    const successCard = document.getElementById("success-card");
-    successCard.style.display = "block";
-    successCard.scrollIntoView({ behavior: "smooth", block: "center" });
+    const card = document.getElementById("success-card");
+    card.style.display = "block";
+    card.scrollIntoView({ behavior: "smooth", block: "center" });
 
-    // 重設時段（這筆已佔用）
     selectedTime = null;
     renderTimeSlots(selectedDate);
 
   } catch (err) {
-    console.error("EmailJS 發送失敗：", err);
+    console.error("送出失敗：", err);
     submitBtn.disabled  = false;
     submitBtn.innerHTML = "送出預約";
     alert("傳送失敗，請稍後再試或直接來電聯絡。");
