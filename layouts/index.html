@@ -1,36 +1,57 @@
 {{ define "main" }}
 <style>
-/* ===== WRAPPER ===== */
+/* ===== RESET & WRAPPER ===== */
+*, *::before, *::after { box-sizing: border-box; }
+
 .booking-wrapper {
   max-width: 600px;
-  margin: 40px auto;
+  margin: 32px auto;
   padding: 0 16px 60px;
 }
 .booking-wrapper h2 {
   text-align: center;
-  font-size: 1.6rem;
-  margin-bottom: 6px;
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
 }
 .booking-wrapper p.subtitle {
   text-align: center;
-  color: var(--secondary, #aaa);
-  margin-bottom: 28px;
-  font-size: 0.95rem;
+  color: var(--secondary, #999);
+  margin-bottom: 24px;
+  font-size: 0.9rem;
 }
-.step-section {
+
+/* ===== CARD (每個步驟的容器) ===== */
+.step-card {
   background: var(--entry, #1e1e1e);
-  border-radius: 14px;
-  padding: 24px;
-  margin-bottom: 16px;
-  box-shadow: 0 2px 16px rgba(0,0,0,0.25);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 12px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15), 0 4px 20px rgba(0,0,0,0.2);
 }
-.step-title {
-  font-size: 0.82rem;
+
+/* ===== 步驟標題（圓形數字 + 文字）===== */
+.step-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+.step-num {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: #4e8ef7;
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  letter-spacing: 0;
+}
+.step-label {
+  font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: #4e8ef7;
-  margin-bottom: 16px;
+  color: var(--primary, #ddd);
 }
 
 /* ===== CALENDAR ===== */
@@ -38,167 +59,313 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 12px;
 }
-.cal-header span {
+.cal-month-title {
   font-weight: 700;
-  font-size: 1.05rem;
+  font-size: 1rem;
 }
+/* ★ 修正：觸控最小 44px */
 .cal-nav {
+  width: 44px; height: 44px;
+  border-radius: 10px;
   background: none;
   border: 1px solid var(--border, #444);
   color: var(--primary, #ddd);
-  width: 34px; height: 34px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   display: flex; align-items: center; justify-content: center;
-  transition: background 0.15s;
-  line-height: 1;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 .cal-nav:hover:not(:disabled) { background: rgba(78,142,247,0.15); border-color: #4e8ef7; }
-.cal-nav:disabled { opacity: 0.25; cursor: default; }
+.cal-nav:active:not(:disabled) { background: rgba(78,142,247,0.3); }
+.cal-nav:disabled { opacity: 0.2; cursor: default; }
+
 .cal-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
+  gap: 2px;
 }
 .cal-day-label {
   text-align: center;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   color: var(--secondary, #888);
-  padding: 4px 0 8px;
+  padding: 3px 0 8px;
   font-weight: 600;
 }
+/* ★ 修正：最小觸控高度，aspect-ratio 保持正方 */
 .cal-day {
   aspect-ratio: 1;
-  border-radius: 8px;
+  min-height: 40px;
+  border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.88rem;
+  font-size: 0.9rem;
   cursor: pointer;
   border: 1.5px solid transparent;
-  transition: all 0.15s;
+  transition: background 0.12s, border-color 0.12s;
   user-select: none;
   position: relative;
+  -webkit-tap-highlight-color: transparent;
 }
 .cal-day:hover:not(.cal-past):not(.cal-empty):not(.cal-full) {
-  background: rgba(78,142,247,0.15);
-  border-color: #4e8ef7;
+  background: rgba(78,142,247,0.15); border-color: rgba(78,142,247,0.4);
 }
-.cal-day.cal-today { border-color: #4e8ef7; font-weight: 700; }
-.cal-day.cal-selected { background: #4e8ef7 !important; border-color: #4e8ef7; color: white; font-weight: 700; }
-.cal-day.cal-past, .cal-day.cal-empty { color: var(--secondary, #444); cursor: default; pointer-events: none; }
-.cal-day.cal-full { color: var(--secondary, #555); cursor: default; pointer-events: none; text-decoration: line-through; opacity: 0.4; }
+.cal-day:active:not(.cal-past):not(.cal-empty):not(.cal-full) {
+  background: rgba(78,142,247,0.3);
+}
+.cal-day.cal-today     { border-color: #4e8ef7; font-weight: 700; }
+.cal-day.cal-selected  { background: #4e8ef7 !important; border-color: #4e8ef7; color: #fff; font-weight: 700; }
+.cal-day.cal-past,
+.cal-day.cal-empty     { color: var(--secondary, #444); cursor: default; pointer-events: none; }
+.cal-day.cal-full      { opacity: 0.35; cursor: default; pointer-events: none; text-decoration: line-through; }
+/* 有預約的日期底部小點 */
 .cal-day.cal-has-booking::after {
   content: '';
   position: absolute;
-  bottom: 3px; left: 50%;
+  bottom: 4px; left: 50%;
   transform: translateX(-50%);
   width: 4px; height: 4px;
   border-radius: 50%;
   background: #4e8ef7;
 }
-.cal-day.cal-selected::after { background: white; }
+.cal-day.cal-selected::after { background: rgba(255,255,255,0.8); }
 
 /* ===== TIME SLOTS ===== */
 .slots-placeholder {
   text-align: center;
   color: var(--secondary, #888);
-  font-size: 0.9rem;
-  padding: 16px 0;
+  font-size: 0.88rem;
+  padding: 20px 0;
 }
+/* ★ 修正：auto-fill 自適應欄位，手機會顯示 3 欄 */
 .slots-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(82px, 1fr));
   gap: 8px;
 }
+/* ★ 修正：min-height 56px 確保觸控目標 */
 .slot-btn {
-  padding: 10px 4px 8px;
-  border-radius: 10px;
-  border: 1.5px solid var(--border, #444);
-  background: var(--theme, #121212);
+  min-height: 56px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border, #3a3a3a);
+  background: var(--theme, #141414);
   color: var(--primary, #ddd);
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 0.92rem;
+  font-weight: 700;
   cursor: pointer;
   text-align: center;
-  transition: all 0.15s;
-  line-height: 1.3;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 3px;
+  transition: background 0.12s, border-color 0.12s, transform 0.08s;
+  -webkit-tap-highlight-color: transparent;
 }
-.slot-btn:hover:not(:disabled) { border-color: #4e8ef7; background: rgba(78,142,247,0.12); }
-.slot-btn.selected { background: #4e8ef7; border-color: #4e8ef7; color: white; }
-.slot-btn:disabled { background: rgba(0,0,0,0.1); color: var(--secondary, #555); cursor: not-allowed; border-color: var(--border, #333); }
-.slot-surcharge {
-  display: block;
-  font-size: 0.62rem;
-  font-weight: 400;
-  color: #ff9800;
-  margin-top: 2px;
-}
-.slot-btn.selected .slot-surcharge { color: #ffe0a0; }
-.slot-booked {
-  display: block;
-  font-size: 0.62rem;
-  font-weight: 400;
+.slot-btn:hover:not(:disabled) { border-color: #4e8ef7; background: rgba(78,142,247,0.1); }
+.slot-btn:active:not(:disabled) { transform: scale(0.95); }
+.slot-btn.selected  { background: #4e8ef7; border-color: #4e8ef7; color: #fff; }
+.slot-btn:disabled  {
+  background: rgba(255,255,255,0.02);
   color: var(--secondary, #555);
-  margin-top: 2px;
+  cursor: default;
+  border-color: transparent;
+}
+.slot-time { font-size: 0.92rem; font-weight: 700; line-height: 1; }
+.slot-surcharge {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: #f59e0b;
+  line-height: 1;
+}
+.slot-btn.selected .slot-surcharge { color: #fde68a; }
+.slot-booked {
+  font-size: 0.6rem;
+  color: var(--secondary, #555);
+  line-height: 1;
 }
 
-/* ===== FORM ===== */
+/* 載入 Spinner */
+.spinner-wrap {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  padding: 20px 0;
+  color: var(--secondary, #888);
+  font-size: 0.88rem;
+}
+.spinner {
+  width: 18px; height: 18px;
+  border: 2px solid rgba(78,142,247,0.2);
+  border-top-color: #4e8ef7;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ===== FORM STEP（隱藏 → 顯示帶動畫）===== */
+.form-step { display: none; }
+@keyframes fadeSlideIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.form-step.visible {
+  display: block;
+  animation: fadeSlideIn 0.22s ease;
+}
+
+/* 已選摘要 */
 .selected-summary {
-  background: rgba(78,142,247,0.1);
-  border: 1px solid rgba(78,142,247,0.3);
-  border-radius: 10px;
-  padding: 12px 16px;
+  background: rgba(78,142,247,0.08);
+  border: 1px solid rgba(78,142,247,0.25);
+  border-radius: 12px;
+  padding: 14px 16px;
   margin-bottom: 20px;
   font-size: 0.9rem;
-  color: var(--primary, #ddd);
-  line-height: 1.7;
+  line-height: 1.8;
 }
 .selected-summary strong { color: #4e8ef7; }
 .surcharge-notice {
-  display: inline-block;
-  background: rgba(255,152,0,0.15);
-  border: 1px solid rgba(255,152,0,0.4);
-  color: #ff9800;
+  display: inline-flex; align-items: center; gap: 4px;
+  background: rgba(245,158,11,0.12);
+  border: 1px solid rgba(245,158,11,0.35);
+  color: #f59e0b;
   border-radius: 6px;
   padding: 2px 8px;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   font-weight: 600;
-  margin-left: 6px;
+  margin-top: 4px;
 }
-.form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
-.form-group label { font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: var(--primary, #ddd); }
+
+/* ===== FORM ===== */
+.form-group { display: flex; flex-direction: column; margin-bottom: 14px; }
+.form-group label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin-bottom: 5px;
+  color: var(--secondary, #aaa);
+  letter-spacing: 0.02em;
+}
+/* ★ 修正：min-height 48px，font-size 16px 防止 iOS 自動縮放 */
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100%; padding: 10px 14px;
-  border-radius: 8px; border: 1px solid var(--border, #444);
-  background: var(--theme, #121212); color: var(--primary, #ddd);
-  font-size: 1rem; box-sizing: border-box;
-  transition: border-color 0.2s;
+  width: 100%;
+  min-height: 48px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border, #3a3a3a);
+  background: var(--theme, #141414);
+  color: var(--primary, #ddd);
+  font-size: 16px; /* 防 iOS zoom */
+  transition: border-color 0.15s;
   appearance: none; -webkit-appearance: none;
 }
 .form-group select {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23aaa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23888' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 38px;
 }
-.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4e8ef7; }
-.form-group select:disabled { opacity: 0.5; cursor: not-allowed; }
-.service-tag { display: inline-block; font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
+.form-group textarea { min-height: 80px; resize: vertical; }
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus { outline: none; border-color: #4e8ef7; }
+.form-group select:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.service-tag {
+  display: inline-block; font-size: 0.7rem; padding: 2px 8px;
+  border-radius: 99px; margin-left: 6px; vertical-align: middle;
+}
 .tag-nail { background: #f3e5f5; color: #7b1fa2; }
 .tag-lash { background: #e3f2fd; color: #1565c0; }
+
+/* ★ 修正：送出按鈕 50px 高，手機友善 */
 .submit-btn {
-  width: 100%; padding: 13px; border-radius: 10px; border: none;
-  background-color: #4e8ef7; color: white;
-  font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 8px;
-  transition: background-color 0.2s;
+  width: 100%;
+  min-height: 50px;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  background: #4e8ef7;
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  margin-top: 6px;
+  transition: background 0.15s, transform 0.08s;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  -webkit-tap-highlight-color: transparent;
 }
-.submit-btn:hover { background-color: #3a7ae0; }
-.submit-btn:disabled { background-color: #555; cursor: not-allowed; }
-#form-status { text-align: center; margin-top: 14px; font-weight: bold; min-height: 24px; }
-.form-step { display: none; }
-.form-step.visible { display: block; }
+.submit-btn:hover  { background: #3a7ae0; }
+.submit-btn:active { transform: scale(0.98); }
+.submit-btn:disabled { background: #555; cursor: not-allowed; transform: none; }
+
+/* 送出中 spinner（小）*/
+.btn-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+/* ===== 成功畫面 ===== */
+#success-card {
+  display: none;
+  text-align: center;
+  padding: 12px 8px 4px;
+  animation: fadeSlideIn 0.3s ease;
+}
+.success-icon {
+  width: 60px; height: 60px;
+  background: #22c55e;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0 auto 16px;
+  font-size: 1.8rem;
+  color: white;
+}
+#success-card h3 {
+  font-size: 1.15rem;
+  margin-bottom: 6px;
+  color: var(--primary, #ddd);
+}
+#success-card p {
+  font-size: 0.88rem;
+  color: var(--secondary, #aaa);
+  margin-bottom: 16px;
+  line-height: 1.6;
+}
+.success-detail {
+  background: rgba(78,142,247,0.08);
+  border: 1px solid rgba(78,142,247,0.2);
+  border-radius: 12px;
+  padding: 14px 16px;
+  text-align: left;
+  font-size: 0.9rem;
+  line-height: 2;
+  margin-bottom: 20px;
+  color: var(--primary, #ddd);
+}
+.success-detail strong { color: #4e8ef7; }
+.new-booking-btn {
+  width: 100%; padding: 13px;
+  border-radius: 12px;
+  border: 1.5px solid var(--border, #444);
+  background: none;
+  color: var(--primary, #ddd);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.new-booking-btn:hover { background: rgba(78,142,247,0.08); border-color: #4e8ef7; color: #4e8ef7; }
+
+/* ===== RWD — 窄螢幕微調 ===== */
+@media (max-width: 400px) {
+  .step-card { padding: 16px 14px; }
+  .slots-grid { grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); gap: 6px; }
+  .booking-wrapper { padding: 0 10px 60px; }
+}
 </style>
 
 <div class="booking-wrapper">
@@ -206,40 +373,53 @@
   <p class="subtitle">選擇日期與時段，填寫資料後送出預約</p>
 
   <!-- ① 選擇日期 -->
-  <div class="step-section">
-    <div class="step-title">① 選擇日期</div>
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">1</div>
+      <span class="step-label">選擇日期</span>
+    </div>
     <div class="cal-header">
       <button class="cal-nav" id="cal-prev">‹</button>
-      <span id="cal-title"></span>
+      <span class="cal-month-title" id="cal-title"></span>
       <button class="cal-nav" id="cal-next">›</button>
     </div>
     <div class="cal-grid" id="cal-grid"></div>
   </div>
 
   <!-- ② 選擇時段 -->
-  <div class="step-section">
-    <div class="step-title">② 選擇時段</div>
+  <div class="step-card">
+    <div class="step-header">
+      <div class="step-num">2</div>
+      <span class="step-label">選擇時段</span>
+    </div>
     <div id="slots-container">
       <div class="slots-placeholder">請先選擇日期</div>
     </div>
   </div>
 
-  <!-- ③ 填寫資料（選完時段才顯示） -->
-  <div class="step-section form-step" id="form-step">
-    <div class="step-title">③ 填寫預約資料</div>
+  <!-- ③ 填寫資料（選完時段後 fade in）-->
+  <div class="step-card form-step" id="form-step">
+    <div class="step-header">
+      <div class="step-num">3</div>
+      <span class="step-label">填寫預約資料</span>
+    </div>
+
+    <!-- 已選摘要 -->
     <div class="selected-summary" id="selected-summary"></div>
+
+    <!-- 表單 -->
     <form id="booking-form">
       <div class="form-group">
         <label for="name">姓名</label>
-        <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
-      </div>
-      <div class="form-group">
-        <label for="email">電子郵件</label>
-        <input type="email" id="email" name="email" placeholder="example@email.com" required>
+        <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required autocomplete="name">
       </div>
       <div class="form-group">
         <label for="phone">聯絡電話</label>
-        <input type="tel" id="phone" name="phone" placeholder="0912-345-678" required>
+        <input type="tel" id="phone" name="phone" placeholder="0912-345-678" required autocomplete="tel">
+      </div>
+      <div class="form-group">
+        <label for="email">電子郵件</label>
+        <input type="email" id="email" name="email" placeholder="example@email.com" required autocomplete="email">
       </div>
       <div class="form-group">
         <label for="category">服務類別</label>
@@ -260,15 +440,22 @@
       </div>
       <div class="form-group">
         <label for="notes">備註（選填）</label>
-        <textarea id="notes" name="notes" rows="3" placeholder="如有特殊需求、參考圖片連結等請在此說明"></textarea>
+        <textarea id="notes" name="notes" placeholder="如有特殊需求、參考圖片連結等請在此說明"></textarea>
       </div>
-      <button type="submit" class="submit-btn">送出預約</button>
-      <div id="form-status"></div>
+      <button type="submit" class="submit-btn" id="submit-btn">送出預約</button>
     </form>
+
+    <!-- 成功畫面（送出後替換表單）-->
+    <div id="success-card">
+      <div class="success-icon">✓</div>
+      <h3>預約申請已送出！</h3>
+      <p>我們收到後會盡快與您確認，<br>請留意電話或信箱的聯絡通知。</p>
+      <div class="success-detail" id="success-detail"></div>
+      <button class="new-booking-btn" onclick="resetBooking()">再預約一次</button>
+    </div>
   </div>
 </div>
 
-<!-- EmailJS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
 // =====================================================
@@ -280,16 +467,15 @@ const EMAILJS_TEMPLATE_ID = "template_jsrd2gm";
 const APPS_SCRIPT_URL     = "YOUR_APPS_SCRIPT_URL"; // ← 部署 Apps Script 後填入
 
 // 營業設定
-const OPEN_HOUR        = 8;    // 開始時間
-const CLOSE_HOUR       = 20;   // 結束時間（最後時段在 19:00 開始）
-const SLOT_MINS        = 60;   // 每時段分鐘數
-const SURCHARGE_HOUR   = 19;   // 幾點（含）以後加收費用
-const SURCHARGE_AMOUNT = 200;  // 加收金額 NT$
+const OPEN_HOUR        = 8;
+const CLOSE_HOUR       = 20;
+const SLOT_MINS        = 60;
+const SURCHARGE_HOUR   = 19;
+const SURCHARGE_AMOUNT = 200;
 // =====================================================
 
 emailjs.init(EMAILJS_PUBLIC_KEY);
 
-// 服務項目
 const SERVICES = {
   nail: {
     label: "美甲", tagClass: "tag-nail",
@@ -301,19 +487,15 @@ const SERVICES = {
   }
 };
 
-// 產生所有時段
 function generateSlots() {
-  const slots = [];
-  for (let h = OPEN_HOUR; h < CLOSE_HOUR; h++) {
-    slots.push(`${String(h).padStart(2,'0')}:00`);
-  }
-  return slots;
+  const s = [];
+  for (let h = OPEN_HOUR; h < CLOSE_HOUR; h++) s.push(`${String(h).padStart(2,'0')}:00`);
+  return s;
 }
-const ALL_SLOTS = generateSlots(); // ["08:00","09:00",...,"19:00"]
+const ALL_SLOTS = generateSlots();
 
-// ===== 狀態 =====
-let bookedSet = new Set();   // "YYYY-MM-DD_HH:MM"
-let slotsReady = false;
+let bookedSet    = new Set();
+let slotsReady   = false;
 let selectedDate = null;
 let selectedTime = null;
 
@@ -323,13 +505,12 @@ today.setHours(0, 0, 0, 0);
 // ===== 讀取已預約時段 =====
 async function loadBookedSlots() {
   if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL") {
-    slotsReady = true;
-    return;
+    slotsReady = true; return;
   }
   try {
-    const res = await fetch(`${APPS_SCRIPT_URL}?action=getBooked`);
+    const res  = await fetch(`${APPS_SCRIPT_URL}?action=getBooked`);
     const data = await res.json();
-    bookedSet = new Set(data.booked || []);
+    bookedSet  = new Set(data.booked || []);
   } catch (e) {
     console.warn("無法讀取預約紀錄：", e);
   } finally {
@@ -345,16 +526,8 @@ function initCalendar() {
   calYear  = today.getFullYear();
   calMonth = today.getMonth();
   renderCalendar();
-  document.getElementById("cal-prev").onclick = () => {
-    calMonth--;
-    if (calMonth < 0) { calMonth = 11; calYear--; }
-    renderCalendar();
-  };
-  document.getElementById("cal-next").onclick = () => {
-    calMonth++;
-    if (calMonth > 11) { calMonth = 0; calYear++; }
-    renderCalendar();
-  };
+  document.getElementById("cal-prev").onclick = () => { calMonth--; if (calMonth < 0) { calMonth = 11; calYear--; } renderCalendar(); };
+  document.getElementById("cal-next").onclick = () => { calMonth++; if (calMonth > 11) { calMonth = 0; calYear++; } renderCalendar(); };
 }
 
 function renderCalendar() {
@@ -365,7 +538,6 @@ function renderCalendar() {
   const grid = document.getElementById("cal-grid");
   grid.innerHTML = "";
 
-  // 星期標題（週一為第一天）
   ["一","二","三","四","五","六","日"].forEach(d => {
     const el = document.createElement("div");
     el.className = "cal-day-label";
@@ -373,17 +545,13 @@ function renderCalendar() {
     grid.appendChild(el);
   });
 
-  // 空格補位
   const firstDay = new Date(calYear, calMonth, 1);
   let offset = firstDay.getDay();
   offset = (offset === 0) ? 6 : offset - 1;
   for (let i = 0; i < offset; i++) {
-    const el = document.createElement("div");
-    el.className = "cal-day cal-empty";
-    grid.appendChild(el);
+    const el = document.createElement("div"); el.className = "cal-day cal-empty"; grid.appendChild(el);
   }
 
-  // 日期格
   const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
   for (let d = 1; d <= daysInMonth; d++) {
     const el = document.createElement("div");
@@ -396,17 +564,11 @@ function renderCalendar() {
       el.classList.add("cal-past");
     } else {
       if (dayDate.getTime() === today.getTime()) el.classList.add("cal-today");
-
-      // 是否全滿
       if (slotsReady) {
-        const bookedCount = ALL_SLOTS.filter(s => bookedSet.has(`${dateStr}_${s}`)).length;
-        if (bookedCount === ALL_SLOTS.length) {
-          el.classList.add("cal-full");
-        } else if (bookedCount > 0) {
-          el.classList.add("cal-has-booking");
-        }
+        const cnt = ALL_SLOTS.filter(s => bookedSet.has(`${dateStr}_${s}`)).length;
+        if (cnt === ALL_SLOTS.length) el.classList.add("cal-full");
+        else if (cnt > 0) el.classList.add("cal-has-booking");
       }
-
       if (dateStr === selectedDate) el.classList.add("cal-selected");
       el.onclick = () => selectDate(dateStr);
     }
@@ -425,8 +587,14 @@ function selectDate(dateStr) {
 // ===== 時段格 =====
 function renderTimeSlots(dateStr) {
   const container = document.getElementById("slots-container");
+
+  // 讀取中：顯示 spinner
   if (!slotsReady) {
-    container.innerHTML = '<div class="slots-placeholder">讀取可用時段中…</div>';
+    container.innerHTML = `
+      <div class="spinner-wrap">
+        <div class="spinner"></div>
+        <span>讀取可用時段…</span>
+      </div>`;
     return;
   }
 
@@ -434,29 +602,31 @@ function renderTimeSlots(dateStr) {
   grid.className = "slots-grid";
 
   ALL_SLOTS.forEach(slot => {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "slot-btn";
-
-    const hour       = parseInt(slot);
-    const isBooked   = bookedSet.has(`${dateStr}_${slot}`);
+    const btn         = document.createElement("button");
+    btn.type          = "button";
+    btn.className     = "slot-btn";
+    const hour        = parseInt(slot);
+    const isBooked    = bookedSet.has(`${dateStr}_${slot}`);
     const isSurcharge = hour >= SURCHARGE_HOUR;
 
-    btn.innerHTML = `<span>${slot}</span>`;
+    const timeEl = document.createElement("span");
+    timeEl.className = "slot-time";
+    timeEl.textContent = slot;
+    btn.appendChild(timeEl);
 
     if (isSurcharge) {
       const badge = document.createElement("span");
-      badge.className = "slot-surcharge";
+      badge.className   = "slot-surcharge";
       badge.textContent = `+NT$${SURCHARGE_AMOUNT}`;
       btn.appendChild(badge);
     }
 
     if (isBooked) {
       btn.disabled = true;
-      const label = document.createElement("span");
-      label.className = "slot-booked";
-      label.textContent = "已預約";
-      btn.appendChild(label);
+      const lb = document.createElement("span");
+      lb.className   = "slot-booked";
+      lb.textContent = "已預約";
+      btn.appendChild(lb);
     } else {
       if (slot === selectedTime) btn.classList.add("selected");
       btn.onclick = () => selectTime(slot, isSurcharge);
@@ -472,44 +642,40 @@ function selectTime(slot, isSurcharge) {
   selectedTime = slot;
   renderTimeSlots(selectedDate);
 
-  // 更新摘要並顯示表單
   const d = new Date(selectedDate + "T00:00:00");
   const dateDisplay = d.toLocaleDateString("zh-TW", {
     year: "numeric", month: "long", day: "numeric", weekday: "short"
   });
 
-  let summaryHtml = `📅 <strong>${dateDisplay}</strong>&nbsp;&nbsp;🕐 <strong>${slot}</strong>`;
+  let html = `📅 <strong>${dateDisplay}</strong><br>🕐 <strong>${slot}</strong>`;
   if (isSurcharge) {
-    summaryHtml += `<br><span class="surcharge-notice">⚠️ 此時段加收 NT$${SURCHARGE_AMOUNT} 加班費</span>`;
+    html += `<br><span class="surcharge-notice">⚠ 此時段加收 NT$${SURCHARGE_AMOUNT} 加班費</span>`;
   }
-  document.getElementById("selected-summary").innerHTML = summaryHtml;
+  document.getElementById("selected-summary").innerHTML = html;
 
   const formStep = document.getElementById("form-step");
   formStep.classList.add("visible");
-  setTimeout(() => formStep.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+  setTimeout(() => formStep.scrollIntoView({ behavior: "smooth", block: "nearest" }), 60);
 }
 
 // ===== 服務選單 =====
 document.getElementById("category").addEventListener("change", function () {
-  const serviceSelect = document.getElementById("service");
+  const sel = document.getElementById("service");
   const tag = document.getElementById("service-tag");
   const val = this.value;
-
   if (val && SERVICES[val]) {
     const { label, tagClass, items } = SERVICES[val];
-    serviceSelect.innerHTML = `<option value="">請選擇${label}項目</option>`;
+    sel.innerHTML = `<option value="">請選擇${label}項目</option>`;
     items.forEach(item => {
-      const opt = document.createElement("option");
-      opt.value = item; opt.textContent = item;
-      serviceSelect.appendChild(opt);
+      const o = document.createElement("option"); o.value = item; o.textContent = item; sel.appendChild(o);
     });
-    serviceSelect.disabled = false;
+    sel.disabled   = false;
     tag.textContent = label;
-    tag.className = `service-tag ${tagClass}`;
+    tag.className   = `service-tag ${tagClass}`;
     tag.style.display = "inline-block";
   } else {
-    serviceSelect.innerHTML = "<option value=''>請先選擇服務類別</option>";
-    serviceSelect.disabled = true;
+    sel.innerHTML = "<option value=''>請先選擇服務類別</option>";
+    sel.disabled  = true;
     tag.style.display = "none";
   }
 });
@@ -517,18 +683,15 @@ document.getElementById("category").addEventListener("change", function () {
 // ===== 送出預約 =====
 document.getElementById("booking-form").addEventListener("submit", async function (e) {
   e.preventDefault();
-  const statusDiv = document.getElementById("form-status");
-  const submitBtn = this.querySelector(".submit-btn");
+  const submitBtn = document.getElementById("submit-btn");
 
   if (!selectedDate || !selectedTime) {
-    statusDiv.textContent = "請先選擇日期與時段！";
-    statusDiv.style.color = "#f44336";
-    return;
+    alert("請先選擇日期與時段！"); return;
   }
 
-  statusDiv.textContent = "傳送中…";
-  statusDiv.style.color = "#4e8ef7";
-  submitBtn.disabled = true;
+  // 按鈕變成載入狀態
+  submitBtn.disabled   = true;
+  submitBtn.innerHTML  = `<span class="btn-spinner"></span> 傳送中…`;
 
   const name     = document.getElementById("name").value.trim();
   const email    = document.getElementById("email").value.trim();
@@ -538,13 +701,13 @@ document.getElementById("booking-form").addEventListener("submit", async functio
   const service  = document.getElementById("service").value;
   const notes    = document.getElementById("notes").value.trim() || "無";
   const hour     = parseInt(selectedTime);
-  const hasSurcharge = hour >= SURCHARGE_HOUR;
+  const hasSurcharge  = hour >= SURCHARGE_HOUR;
   const surchargeText = hasSurcharge ? `是（+NT$${SURCHARGE_AMOUNT}）` : "否";
 
   // Google Calendar 連結
   const startTime = new Date(`${selectedDate}T${selectedTime}:00`);
   const endTime   = new Date(startTime.getTime() + SLOT_MINS * 60 * 1000);
-  const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const fmt       = d => d.toISOString().replace(/[-:]/g,"").split(".")[0] + "Z";
   const gcalText    = encodeURIComponent(`預約 ${category}：${name}`);
   const gcalDetails = encodeURIComponent(
     `服務：${category} - ${service}\n姓名：${name}\n電話：${phone}\n信箱：${email}${hasSurcharge ? `\n⚠️ 加班費：NT$${SURCHARGE_AMOUNT}` : ''}\n備註：${notes}`
@@ -558,20 +721,11 @@ document.getElementById("booking-form").addEventListener("submit", async functio
   // 1. 寫入 Google Sheets
   if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== "YOUR_APPS_SCRIPT_URL") {
     try {
-      const params = new URLSearchParams({
-        action: "book",
-        date: selectedDate, time: selectedTime,
-        name, phone, email, category, service, notes
-      });
-      const res  = await fetch(`${APPS_SCRIPT_URL}?${params}`);
-      const data = await res.json();
-      if (data.success) {
-        bookedSet.add(`${selectedDate}_${selectedTime}`);
-        renderCalendar(); // 重新渲染（可能變全滿）
-      }
-    } catch (err) {
-      console.warn("Google Sheets 寫入失敗：", err);
-    }
+      const params = new URLSearchParams({ action:"book", date:selectedDate, time:selectedTime, name, phone, email, category, service, notes });
+      const res    = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+      const data   = await res.json();
+      if (data.success) { bookedSet.add(`${selectedDate}_${selectedTime}`); renderCalendar(); }
+    } catch (err) { console.warn("Google Sheets 寫入失敗：", err); }
   }
 
   // 2. EmailJS 通知
@@ -579,26 +733,51 @@ document.getElementById("booking-form").addEventListener("submit", async functio
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
       name, email, phone, category, service,
       date: dateDisplay, time: selectedTime,
-      surcharge: surchargeText,
-      notes, gcal_link: gcalLink,
+      surcharge: surchargeText, notes, gcal_link: gcalLink,
     });
 
-    statusDiv.innerHTML = "✅ 預約申請已送出！我們會盡快與您確認。";
-    statusDiv.style.color = "#4caf50";
-    this.reset();
-    document.getElementById("service").disabled = true;
-    document.getElementById("service-tag").style.display = "none";
+    // 顯示成功畫面
+    document.getElementById("booking-form").style.display = "none";
+    document.getElementById("selected-summary").style.display = "none";
+
+    let detailHtml = `
+      📅 <strong>${dateDisplay}</strong><br>
+      🕐 <strong>${selectedTime}</strong><br>
+      ✂️ <strong>${category}｜${service}</strong><br>
+      👤 ${name}　📞 ${phone}`;
+    if (hasSurcharge) detailHtml += `<br>⚠️ <span style="color:#f59e0b;">加班費 NT$${SURCHARGE_AMOUNT}</span>`;
+
+    document.getElementById("success-detail").innerHTML = detailHtml;
+    const successCard = document.getElementById("success-card");
+    successCard.style.display = "block";
+    successCard.scrollIntoView({ behavior: "smooth", block: "center" });
+
+    // 重設時段（這筆已佔用）
     selectedTime = null;
     renderTimeSlots(selectedDate);
-    document.getElementById("form-step").classList.remove("visible");
+
   } catch (err) {
     console.error("EmailJS 發送失敗：", err);
-    statusDiv.textContent = "傳送失敗，請稍後再試。";
-    statusDiv.style.color = "#f44336";
-  } finally {
-    submitBtn.disabled = false;
+    submitBtn.disabled  = false;
+    submitBtn.innerHTML = "送出預約";
+    alert("傳送失敗，請稍後再試或直接來電聯絡。");
   }
 });
+
+// ===== 再預約一次 =====
+function resetBooking() {
+  document.getElementById("booking-form").style.display = "";
+  document.getElementById("selected-summary").style.display = "";
+  document.getElementById("success-card").style.display = "none";
+  document.getElementById("submit-btn").disabled  = false;
+  document.getElementById("submit-btn").innerHTML = "送出預約";
+  document.getElementById("booking-form").reset();
+  document.getElementById("service").disabled = true;
+  document.getElementById("service-tag").style.display = "none";
+  document.getElementById("form-step").classList.remove("visible");
+  selectedTime = null;
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
 // ===== 初始化 =====
 initCalendar();
