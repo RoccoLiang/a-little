@@ -1,7 +1,7 @@
 {{ define "main" }}
 <style>
 .booking-wrapper {
-  max-width: 560px;
+  max-width: 580px;
   margin: 40px auto;
   background: var(--entry, #1e1e1e);
   border-radius: 12px;
@@ -31,6 +31,7 @@
   color: var(--primary, #ddd);
 }
 .form-group input,
+.form-group select,
 .form-group textarea {
   width: 100%;
   padding: 10px 14px;
@@ -41,17 +42,40 @@
   font-size: 1rem;
   box-sizing: border-box;
   transition: border-color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+}
+.form-group select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23aaa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  padding-right: 36px;
 }
 .form-group input:focus,
+.form-group select:focus,
 .form-group textarea:focus {
   outline: none;
   border-color: #4e8ef7;
+}
+.form-group select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 .form-row {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
 }
+.service-tag {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 2px 8px;
+  border-radius: 99px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+.tag-nail { background: #f3e5f5; color: #7b1fa2; }
+.tag-lash { background: #e3f2fd; color: #1565c0; }
 .submit-btn {
   width: 100%;
   padding: 12px;
@@ -65,9 +89,8 @@
   margin-top: 8px;
   transition: background-color 0.2s;
 }
-.submit-btn:hover {
-  background-color: #3a7ae0;
-}
+.submit-btn:hover { background-color: #3a7ae0; }
+.submit-btn:disabled { background-color: #555; cursor: not-allowed; }
 #form-status {
   text-align: center;
   margin-top: 14px;
@@ -80,6 +103,8 @@
   <h2>線上預約</h2>
   <p class="subtitle">歡迎填寫預約表單，我們收到申請後會盡快確認並回覆。</p>
   <form id="booking-form">
+
+    <!-- 基本資料 -->
     <div class="form-group">
       <label for="name">姓名</label>
       <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
@@ -92,6 +117,27 @@
       <label for="phone">聯絡電話</label>
       <input type="tel" id="phone" name="phone" placeholder="0912-345-678" required>
     </div>
+
+    <!-- 服務選擇（兩階段） -->
+    <div class="form-group">
+      <label for="category">服務類別</label>
+      <select id="category" name="category" required>
+        <option value="">請選擇服務類別</option>
+        <option value="nail">💅 美甲</option>
+        <option value="lash">✨ 美睫</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="service">
+        服務項目
+        <span id="service-tag" class="service-tag" style="display:none;"></span>
+      </label>
+      <select id="service" name="service" required disabled>
+        <option value="">請先選擇服務類別</option>
+      </select>
+    </div>
+
+    <!-- 日期 & 時間 -->
     <div class="form-row">
       <div class="form-group">
         <label for="date">預約日期</label>
@@ -102,40 +148,145 @@
         <input type="time" id="time" name="time" required>
       </div>
     </div>
+
+    <!-- 備註 -->
     <div class="form-group">
       <label for="notes">備註（選填）</label>
-      <textarea id="notes" name="notes" rows="3" placeholder="如有特殊需求請在此說明"></textarea>
+      <textarea id="notes" name="notes" rows="3" placeholder="如有特殊需求、參考圖片連結等請在此說明"></textarea>
     </div>
+
     <button type="submit" class="submit-btn">送出預約</button>
     <div id="form-status"></div>
   </form>
 </div>
 
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-  document.getElementById("booking-form").addEventListener("submit", async function(e) {
+  // =====================================================
+  // ★ 設定區：請填入你的 EmailJS 資訊（見下方說明）
+  // =====================================================
+  const EMAILJS_PUBLIC_KEY  = "ydXq_gMt59U_Zfwz9";   // EmailJS > Account > Public Key
+  const EMAILJS_SERVICE_ID  = "service_4qxqcjt";   // EmailJS > Email Services > Service ID
+  const EMAILJS_TEMPLATE_ID = "template_jsrd2gm";  // EmailJS > Email Templates > Template ID
+  // =====================================================
+
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+
+  // 服務項目資料（可自行修改）
+  const SERVICES = {
+    nail: {
+      label: "美甲",
+      tagClass: "tag-nail",
+      items: [
+        "凝膠指甲（素色）",
+        "凝膠指甲（設計款）",
+        "光療指甲",
+        "延甲",
+        "卸甲",
+      ]
+    },
+    lash: {
+      label: "美睫",
+      tagClass: "tag-lash",
+      items: [
+        "自然款（單根嫁接）",
+        "複合款",
+        "濃密款（花束睫毛）",
+        "補睫毛",
+        "卸除睫毛",
+      ]
+    }
+  };
+
+  // 設定日期最小值為今天
+  document.getElementById("date").min = new Date().toISOString().split("T")[0];
+
+  // 類別切換 → 動態載入服務項目
+  document.getElementById("category").addEventListener("change", function () {
+    const serviceSelect = document.getElementById("service");
+    const tag = document.getElementById("service-tag");
+    const val = this.value;
+
+    if (val && SERVICES[val]) {
+      const { label, tagClass, items } = SERVICES[val];
+      serviceSelect.innerHTML = `<option value="">請選擇${label}項目</option>`;
+      items.forEach(item => {
+        const opt = document.createElement("option");
+        opt.value = item;
+        opt.textContent = item;
+        serviceSelect.appendChild(opt);
+      });
+      serviceSelect.disabled = false;
+      tag.textContent = label;
+      tag.className = `service-tag ${tagClass}`;
+      tag.style.display = "inline-block";
+    } else {
+      serviceSelect.innerHTML = "<option value=''>請先選擇服務類別</option>";
+      serviceSelect.disabled = true;
+      tag.style.display = "none";
+    }
+  });
+
+  // 表單送出
+  document.getElementById("booking-form").addEventListener("submit", async function (e) {
     e.preventDefault();
     const form = e.target;
     const statusDiv = document.getElementById("form-status");
+    const submitBtn = form.querySelector(".submit-btn");
+
     statusDiv.textContent = "傳送中...";
     statusDiv.style.color = "#4e8ef7";
-    const data = Object.fromEntries(new FormData(form).entries());
+    submitBtn.disabled = true;
+
+    const name     = document.getElementById("name").value.trim();
+    const email    = document.getElementById("email").value.trim();
+    const phone    = document.getElementById("phone").value.trim();
+    const catVal   = document.getElementById("category").value;
+    const category = SERVICES[catVal]?.label || catVal;
+    const service  = document.getElementById("service").value;
+    const date     = document.getElementById("date").value;
+    const time     = document.getElementById("time").value;
+    const notes    = document.getElementById("notes").value.trim() || "無";
+
+    // 產生 Google Calendar 連結（瀏覽器本地時間，台灣時區正確）
+    const startTime = new Date(`${date}T${time}:00`);
+    const endTime   = new Date(startTime.getTime() + 90 * 60 * 1000); // 預設 90 分鐘
+    const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+
+    const gcalText    = encodeURIComponent(`預約 ${category}：${name}`);
+    const gcalDetails = encodeURIComponent(
+      `服務：${category} - ${service}\n姓名：${name}\n電話：${phone}\n信箱：${email}\n備註：${notes}`
+    );
+    const gcalLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalText}&dates=${fmt(startTime)}/${fmt(endTime)}&details=${gcalDetails}`;
+
+    // 日期格式化顯示
+    const dateDisplay = new Date(`${date}T00:00:00`).toLocaleDateString("zh-TW", {
+      year: "numeric", month: "long", day: "numeric", weekday: "short"
+    });
+
+    const templateParams = {
+      name, email, phone,
+      category, service,
+      date: dateDisplay,
+      time,
+      notes,
+      gcal_link: gcalLink,
+    };
+
     try {
-      const response = await fetch("/api/booking", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-      });
-      if (response.ok) {
-        statusDiv.textContent = "預約成功！我們已收到您的資訊，將盡快與您確認。";
-        statusDiv.style.color = "#4caf50";
-        form.reset();
-      } else {
-        statusDiv.textContent = "預約失敗，請稍後再試。錯誤：" + await response.text();
-        statusDiv.style.color = "#f44336";
-      }
-    } catch (error) {
-      statusDiv.textContent = "傳送發生錯誤，請檢查網路連線。";
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
+      statusDiv.innerHTML = "✅ 預約申請已送出！我們會盡快與您確認預約時間。";
+      statusDiv.style.color = "#4caf50";
+      form.reset();
+      document.getElementById("service").disabled = true;
+      document.getElementById("service-tag").style.display = "none";
+    } catch (err) {
+      console.error("EmailJS error:", err);
+      statusDiv.textContent = "傳送失敗，請稍後再試或直接聯絡我們。";
       statusDiv.style.color = "#f44336";
+    } finally {
+      submitBtn.disabled = false;
     }
   });
 </script>
