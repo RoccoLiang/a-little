@@ -33,6 +33,9 @@ const TOTAL_COLS = 11;
 // 主要路由
 // ============================================================
 function doGet(e) {
+  // 防止從編輯器直接執行 doGet 時 e 為 undefined
+  if (!e || !e.parameter) return respondJson({ error: "無效的請求（請透過部署網址呼叫）" });
+
   const action = e.parameter.action;
 
   if (action === "getBooked") return handleGetBooked();
