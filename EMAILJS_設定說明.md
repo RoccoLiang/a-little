@@ -1,4 +1,12 @@
-# EmailJS 設定說明
+# 預約系統設定說明
+
+本系統由兩個部分組成：
+- **EmailJS**：客人送出預約時，自動寄通知信到你的 Gmail
+- **Google Sheets + Apps Script**：記錄已預約時段，讓前端日曆顯示反灰
+
+---
+
+# Part 1 — EmailJS 設定說明
 
 預約表單使用 [EmailJS](https://www.emailjs.com) 寄送通知信。
 以下步驟完成後，每次有客人送出預約，就會自動寄信到你的 Gmail。
@@ -87,15 +95,33 @@
         📅 一鍵加入 Google 行事曆
       </a>
       <p style="font-size: 12px; color: #aaa; margin-top: 10px;">
-        點擊按鈕即可將此預約加入 Google 行事曆（預設時長 90 分鐘）
+        點擊按鈕即可將此預約加入 Google 行事曆（時長 60 分鐘）
       </p>
     </div>
+
+    {{#if surcharge}}
+    <div style="margin-top: 16px; background: #fff8e1; border: 1px solid #ffcc02; border-radius: 8px; padding: 10px 16px; font-size: 14px; color: #e65100;">
+      ⚠️ 加班費：{{surcharge}}
+    </div>
+    {{/if}}
+
   </div>
   <div style="padding: 16px 32px; background: #eee; text-align: center; font-size: 12px; color: #aaa;">
     此信件由預約系統自動發送
   </div>
 </div>
 ```
+
+> **注意：** EmailJS 的模板語法不支援 `{{#if}}`。若要顯示加班費，請改成這個簡單版本（直接顯示 surcharge 欄位，不為空時才有意義）：
+>
+> 在表格中多加一列：
+> ```html
+> <tr>
+>   <td style="padding: 8px 0; color: #888; font-size: 14px;">加班費</td>
+>   <td style="padding: 8px 0; color: #e65100; font-weight: bold;">{{surcharge}}</td>
+> </tr>
+> ```
+> 插入在「備註」那列前面即可。
 
 4. 點 **Save** 儲存模板
 5. 記下畫面顯示的 **Template ID**（格式類似 `template_xxxxxxx`）
@@ -111,23 +137,9 @@
 
 ## 第五步：填入程式碼
 
-打開 `layouts/index.html`，找到以下這段（約第 169–171 行）：
+✅ EmailJS 的三組金鑰已填入 `layouts/index.html`。
 
-```js
-const EMAILJS_PUBLIC_KEY  = "YOUR_PUBLIC_KEY";
-const EMAILJS_SERVICE_ID  = "YOUR_SERVICE_ID";
-const EMAILJS_TEMPLATE_ID = "YOUR_TEMPLATE_ID";
-```
-
-把三個 `"YOUR_..."` 換成你剛才取得的實際值，例如：
-
-```js
-const EMAILJS_PUBLIC_KEY  = "xxxxxxxxxxxxxxxxxxx";
-const EMAILJS_SERVICE_ID  = "service_abc1234";
-const EMAILJS_TEMPLATE_ID = "template_xyz5678";
-```
-
-儲存後重新 deploy 到 Cloudflare Pages，即可正常運作。
+完成 Part 2（Google Apps Script）設定後，再將 Apps Script 網址填入 `APPS_SCRIPT_URL` 欄位，即可正常運作。
 
 ---
 
@@ -158,3 +170,91 @@ const SERVICES = {
   }
 };
 ```
+
+---
+---
+
+# Part 2 — Google Sheets + Apps Script 設定說明
+
+這個部分讓網站能「記住」哪些時段已被預約，並在日曆上自動反灰。
+
+---
+
+## 第一步：建立 Google Sheet
+
+1. 前往 [Google Sheets](https://sheets.google.com)，建立一個新的試算表
+2. 名稱可隨意取，例如「美甲美睫預約紀錄」
+3. 不需要手動建立欄位，程式會自動建立標題列
+
+---
+
+## 第二步：開啟 Apps Script
+
+1. 在 Google Sheet 上方選單點「**擴充功能**」→「**Apps Script**」
+2. 預設會有一個空白的 `function myFunction() {}` 程式碼
+3. **全選並刪除**，然後**貼上 `GOOGLE_APPS_SCRIPT.js` 的全部內容**
+4. 點左上角**磁碟圖示**儲存（或按 Ctrl+S）
+
+---
+
+## 第三步：部署為網頁應用程式
+
+1. 點右上角「**部署**」→「**新增部署作業**」
+2. 點左側齒輪圖示，選「**網頁應用程式**」
+3. 設定如下：
+
+| 欄位 | 設定值 |
+|------|--------|
+| **執行身分** | 我（你的 Google 帳號） |
+| **誰可以存取** | 所有人（包含匿名使用者） |
+
+4. 點「**部署**」
+5. Google 可能要求你授權，點「授予存取權」→ 選你的帳號 → 點「允許」
+6. 複製畫面上的「**網頁應用程式網址**」（格式類似 `https://script.google.com/macros/s/xxxxx/exec`）
+
+---
+
+## 第四步：填入網址
+
+打開 `layouts/index.html`，找到這一行（約第 280 行）：
+
+```js
+const APPS_SCRIPT_URL = "YOUR_APPS_SCRIPT_URL";
+```
+
+替換成你剛才複製的網址：
+
+```js
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/xxxxx/exec";
+```
+
+---
+
+## 第五步：重新部署到 Cloudflare
+
+```bash
+git add layouts/index.html
+git commit -m "設定 Google Apps Script URL"
+git push origin master
+```
+
+---
+
+## 日後更新 Apps Script 程式碼
+
+若你之後修改了 `GOOGLE_APPS_SCRIPT.js` 的內容，需要在 Apps Script 裡重新部署才會生效：
+
+1. 在 Apps Script 點「**部署**」→「**管理部署作業**」
+2. 點右側鉛筆圖示編輯
+3. 版本選「**建立新版本**」
+4. 點「**部署**」（網址不變，不需要重新填入）
+
+---
+
+## 如何手動封鎖某個時段？
+
+直接在 Google Sheet 的「預約紀錄」工作表手動新增一列，填入日期和時間即可。頁面下次載入時，那個時段就會自動反灰。
+
+| 日期 | 時間 | 姓名 | 備註 |
+|------|------|------|------|
+| 2026-03-20 | 14:00 | （休假） | 封鎖時段 |

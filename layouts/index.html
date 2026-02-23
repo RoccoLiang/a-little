@@ -1,17 +1,15 @@
 {{ define "main" }}
 <style>
+/* ===== WRAPPER ===== */
 .booking-wrapper {
-  max-width: 580px;
+  max-width: 600px;
   margin: 40px auto;
-  background: var(--entry, #1e1e1e);
-  border-radius: 12px;
-  padding: 36px 40px;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.3);
+  padding: 0 16px 60px;
 }
 .booking-wrapper h2 {
   text-align: center;
-  margin-bottom: 8px;
-  font-size: 1.5rem;
+  font-size: 1.6rem;
+  margin-bottom: 6px;
 }
 .booking-wrapper p.subtitle {
   text-align: center;
@@ -19,275 +17,591 @@
   margin-bottom: 28px;
   font-size: 0.95rem;
 }
-.form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 18px;
+.step-section {
+  background: var(--entry, #1e1e1e);
+  border-radius: 14px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.25);
 }
-.form-group label {
+.step-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #4e8ef7;
+  margin-bottom: 16px;
+}
+
+/* ===== CALENDAR ===== */
+.cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+.cal-header span {
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+.cal-nav {
+  background: none;
+  border: 1px solid var(--border, #444);
+  color: var(--primary, #ddd);
+  width: 34px; height: 34px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s;
+  line-height: 1;
+}
+.cal-nav:hover:not(:disabled) { background: rgba(78,142,247,0.15); border-color: #4e8ef7; }
+.cal-nav:disabled { opacity: 0.25; cursor: default; }
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 3px;
+}
+.cal-day-label {
+  text-align: center;
+  font-size: 0.72rem;
+  color: var(--secondary, #888);
+  padding: 4px 0 8px;
+  font-weight: 600;
+}
+.cal-day {
+  aspect-ratio: 1;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.88rem;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: all 0.15s;
+  user-select: none;
+  position: relative;
+}
+.cal-day:hover:not(.cal-past):not(.cal-empty):not(.cal-full) {
+  background: rgba(78,142,247,0.15);
+  border-color: #4e8ef7;
+}
+.cal-day.cal-today { border-color: #4e8ef7; font-weight: 700; }
+.cal-day.cal-selected { background: #4e8ef7 !important; border-color: #4e8ef7; color: white; font-weight: 700; }
+.cal-day.cal-past, .cal-day.cal-empty { color: var(--secondary, #444); cursor: default; pointer-events: none; }
+.cal-day.cal-full { color: var(--secondary, #555); cursor: default; pointer-events: none; text-decoration: line-through; opacity: 0.4; }
+.cal-day.cal-has-booking::after {
+  content: '';
+  position: absolute;
+  bottom: 3px; left: 50%;
+  transform: translateX(-50%);
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: #4e8ef7;
+}
+.cal-day.cal-selected::after { background: white; }
+
+/* ===== TIME SLOTS ===== */
+.slots-placeholder {
+  text-align: center;
+  color: var(--secondary, #888);
+  font-size: 0.9rem;
+  padding: 16px 0;
+}
+.slots-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+.slot-btn {
+  padding: 10px 4px 8px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border, #444);
+  background: var(--theme, #121212);
+  color: var(--primary, #ddd);
   font-size: 0.9rem;
   font-weight: 600;
-  margin-bottom: 6px;
-  color: var(--primary, #ddd);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.15s;
+  line-height: 1.3;
 }
+.slot-btn:hover:not(:disabled) { border-color: #4e8ef7; background: rgba(78,142,247,0.12); }
+.slot-btn.selected { background: #4e8ef7; border-color: #4e8ef7; color: white; }
+.slot-btn:disabled { background: rgba(0,0,0,0.1); color: var(--secondary, #555); cursor: not-allowed; border-color: var(--border, #333); }
+.slot-surcharge {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: #ff9800;
+  margin-top: 2px;
+}
+.slot-btn.selected .slot-surcharge { color: #ffe0a0; }
+.slot-booked {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 400;
+  color: var(--secondary, #555);
+  margin-top: 2px;
+}
+
+/* ===== FORM ===== */
+.selected-summary {
+  background: rgba(78,142,247,0.1);
+  border: 1px solid rgba(78,142,247,0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 20px;
+  font-size: 0.9rem;
+  color: var(--primary, #ddd);
+  line-height: 1.7;
+}
+.selected-summary strong { color: #4e8ef7; }
+.surcharge-notice {
+  display: inline-block;
+  background: rgba(255,152,0,0.15);
+  border: 1px solid rgba(255,152,0,0.4);
+  color: #ff9800;
+  border-radius: 6px;
+  padding: 2px 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin-left: 6px;
+}
+.form-group { display: flex; flex-direction: column; margin-bottom: 16px; }
+.form-group label { font-size: 0.88rem; font-weight: 600; margin-bottom: 6px; color: var(--primary, #ddd); }
 .form-group input,
 .form-group select,
 .form-group textarea {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: 8px;
-  border: 1px solid var(--border, #444);
-  background: var(--theme, #121212);
-  color: var(--primary, #ddd);
-  font-size: 1rem;
-  box-sizing: border-box;
+  width: 100%; padding: 10px 14px;
+  border-radius: 8px; border: 1px solid var(--border, #444);
+  background: var(--theme, #121212); color: var(--primary, #ddd);
+  font-size: 1rem; box-sizing: border-box;
   transition: border-color 0.2s;
-  appearance: none;
-  -webkit-appearance: none;
+  appearance: none; -webkit-appearance: none;
 }
 .form-group select {
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23aaa' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 14px center;
-  padding-right: 36px;
+  background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
 }
-.form-group input:focus,
-.form-group select:focus,
-.form-group textarea:focus {
-  outline: none;
-  border-color: #4e8ef7;
-}
-.form-group select:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-.form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.service-tag {
-  display: inline-block;
-  font-size: 0.75rem;
-  padding: 2px 8px;
-  border-radius: 99px;
-  margin-left: 6px;
-  vertical-align: middle;
-}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4e8ef7; }
+.form-group select:disabled { opacity: 0.5; cursor: not-allowed; }
+.service-tag { display: inline-block; font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; margin-left: 6px; vertical-align: middle; }
 .tag-nail { background: #f3e5f5; color: #7b1fa2; }
 .tag-lash { background: #e3f2fd; color: #1565c0; }
 .submit-btn {
-  width: 100%;
-  padding: 12px;
-  border-radius: 8px;
-  border: none;
-  background-color: #4e8ef7;
-  color: white;
-  font-size: 1.05rem;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
+  width: 100%; padding: 13px; border-radius: 10px; border: none;
+  background-color: #4e8ef7; color: white;
+  font-size: 1.05rem; font-weight: 700; cursor: pointer; margin-top: 8px;
   transition: background-color 0.2s;
 }
 .submit-btn:hover { background-color: #3a7ae0; }
 .submit-btn:disabled { background-color: #555; cursor: not-allowed; }
-#form-status {
-  text-align: center;
-  margin-top: 14px;
-  font-weight: bold;
-  min-height: 24px;
-}
+#form-status { text-align: center; margin-top: 14px; font-weight: bold; min-height: 24px; }
+.form-step { display: none; }
+.form-step.visible { display: block; }
 </style>
 
 <div class="booking-wrapper">
   <h2>線上預約</h2>
-  <p class="subtitle">歡迎填寫預約表單，我們收到申請後會盡快確認並回覆。</p>
-  <form id="booking-form">
+  <p class="subtitle">選擇日期與時段，填寫資料後送出預約</p>
 
-    <!-- 基本資料 -->
-    <div class="form-group">
-      <label for="name">姓名</label>
-      <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
+  <!-- ① 選擇日期 -->
+  <div class="step-section">
+    <div class="step-title">① 選擇日期</div>
+    <div class="cal-header">
+      <button class="cal-nav" id="cal-prev">‹</button>
+      <span id="cal-title"></span>
+      <button class="cal-nav" id="cal-next">›</button>
     </div>
-    <div class="form-group">
-      <label for="email">電子郵件</label>
-      <input type="email" id="email" name="email" placeholder="example@email.com" required>
-    </div>
-    <div class="form-group">
-      <label for="phone">聯絡電話</label>
-      <input type="tel" id="phone" name="phone" placeholder="0912-345-678" required>
-    </div>
+    <div class="cal-grid" id="cal-grid"></div>
+  </div>
 
-    <!-- 服務選擇（兩階段） -->
-    <div class="form-group">
-      <label for="category">服務類別</label>
-      <select id="category" name="category" required>
-        <option value="">請選擇服務類別</option>
-        <option value="nail">💅 美甲</option>
-        <option value="lash">✨ 美睫</option>
-      </select>
+  <!-- ② 選擇時段 -->
+  <div class="step-section">
+    <div class="step-title">② 選擇時段</div>
+    <div id="slots-container">
+      <div class="slots-placeholder">請先選擇日期</div>
     </div>
-    <div class="form-group">
-      <label for="service">
-        服務項目
-        <span id="service-tag" class="service-tag" style="display:none;"></span>
-      </label>
-      <select id="service" name="service" required disabled>
-        <option value="">請先選擇服務類別</option>
-      </select>
-    </div>
+  </div>
 
-    <!-- 日期 & 時間 -->
-    <div class="form-row">
+  <!-- ③ 填寫資料（選完時段才顯示） -->
+  <div class="step-section form-step" id="form-step">
+    <div class="step-title">③ 填寫預約資料</div>
+    <div class="selected-summary" id="selected-summary"></div>
+    <form id="booking-form">
       <div class="form-group">
-        <label for="date">預約日期</label>
-        <input type="date" id="date" name="date" required>
+        <label for="name">姓名</label>
+        <input type="text" id="name" name="name" placeholder="請輸入您的姓名" required>
       </div>
       <div class="form-group">
-        <label for="time">預約時間</label>
-        <input type="time" id="time" name="time" required>
+        <label for="email">電子郵件</label>
+        <input type="email" id="email" name="email" placeholder="example@email.com" required>
       </div>
-    </div>
-
-    <!-- 備註 -->
-    <div class="form-group">
-      <label for="notes">備註（選填）</label>
-      <textarea id="notes" name="notes" rows="3" placeholder="如有特殊需求、參考圖片連結等請在此說明"></textarea>
-    </div>
-
-    <button type="submit" class="submit-btn">送出預約</button>
-    <div id="form-status"></div>
-  </form>
+      <div class="form-group">
+        <label for="phone">聯絡電話</label>
+        <input type="tel" id="phone" name="phone" placeholder="0912-345-678" required>
+      </div>
+      <div class="form-group">
+        <label for="category">服務類別</label>
+        <select id="category" name="category" required>
+          <option value="">請選擇服務類別</option>
+          <option value="nail">💅 美甲</option>
+          <option value="lash">✨ 美睫</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="service">
+          服務項目
+          <span id="service-tag" class="service-tag" style="display:none;"></span>
+        </label>
+        <select id="service" name="service" required disabled>
+          <option value="">請先選擇服務類別</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="notes">備註（選填）</label>
+        <textarea id="notes" name="notes" rows="3" placeholder="如有特殊需求、參考圖片連結等請在此說明"></textarea>
+      </div>
+      <button type="submit" class="submit-btn">送出預約</button>
+      <div id="form-status"></div>
+    </form>
+  </div>
 </div>
 
 <!-- EmailJS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <script>
-  // =====================================================
-  // ★ 設定區：請填入你的 EmailJS 資訊（見下方說明）
-  // =====================================================
-  const EMAILJS_PUBLIC_KEY  = "ydXq_gMt59U_Zfwz9";   // EmailJS > Account > Public Key
-  const EMAILJS_SERVICE_ID  = "service_4qxqcjt";   // EmailJS > Email Services > Service ID
-  const EMAILJS_TEMPLATE_ID = "template_jsrd2gm";  // EmailJS > Email Templates > Template ID
-  // =====================================================
+// =====================================================
+// ★ 設定區
+// =====================================================
+const EMAILJS_PUBLIC_KEY  = "ydXq_gMt59U_Zfwz9";
+const EMAILJS_SERVICE_ID  = "service_4qxqcjt";
+const EMAILJS_TEMPLATE_ID = "template_jsrd2gm";
+const APPS_SCRIPT_URL     = "YOUR_APPS_SCRIPT_URL"; // ← 部署 Apps Script 後填入
 
-  emailjs.init(EMAILJS_PUBLIC_KEY);
+// 營業設定
+const OPEN_HOUR        = 8;    // 開始時間
+const CLOSE_HOUR       = 20;   // 結束時間（最後時段在 19:00 開始）
+const SLOT_MINS        = 60;   // 每時段分鐘數
+const SURCHARGE_HOUR   = 19;   // 幾點（含）以後加收費用
+const SURCHARGE_AMOUNT = 200;  // 加收金額 NT$
+// =====================================================
 
-  // 服務項目資料（可自行修改）
-  const SERVICES = {
-    nail: {
-      label: "美甲",
-      tagClass: "tag-nail",
-      items: [
-        "凝膠指甲（素色）",
-        "凝膠指甲（設計款）",
-        "光療指甲",
-        "延甲",
-        "卸甲",
-      ]
-    },
-    lash: {
-      label: "美睫",
-      tagClass: "tag-lash",
-      items: [
-        "自然款（單根嫁接）",
-        "複合款",
-        "濃密款（花束睫毛）",
-        "補睫毛",
-        "卸除睫毛",
-      ]
-    }
+emailjs.init(EMAILJS_PUBLIC_KEY);
+
+// 服務項目
+const SERVICES = {
+  nail: {
+    label: "美甲", tagClass: "tag-nail",
+    items: ["凝膠指甲（素色）","凝膠指甲（設計款）","光療指甲","延甲","卸甲"]
+  },
+  lash: {
+    label: "美睫", tagClass: "tag-lash",
+    items: ["自然款（單根嫁接）","複合款","濃密款（花束睫毛）","補睫毛","卸除睫毛"]
+  }
+};
+
+// 產生所有時段
+function generateSlots() {
+  const slots = [];
+  for (let h = OPEN_HOUR; h < CLOSE_HOUR; h++) {
+    slots.push(`${String(h).padStart(2,'0')}:00`);
+  }
+  return slots;
+}
+const ALL_SLOTS = generateSlots(); // ["08:00","09:00",...,"19:00"]
+
+// ===== 狀態 =====
+let bookedSet = new Set();   // "YYYY-MM-DD_HH:MM"
+let slotsReady = false;
+let selectedDate = null;
+let selectedTime = null;
+
+const today = new Date();
+today.setHours(0, 0, 0, 0);
+
+// ===== 讀取已預約時段 =====
+async function loadBookedSlots() {
+  if (!APPS_SCRIPT_URL || APPS_SCRIPT_URL === "YOUR_APPS_SCRIPT_URL") {
+    slotsReady = true;
+    return;
+  }
+  try {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=getBooked`);
+    const data = await res.json();
+    bookedSet = new Set(data.booked || []);
+  } catch (e) {
+    console.warn("無法讀取預約紀錄：", e);
+  } finally {
+    slotsReady = true;
+    renderCalendar();
+    if (selectedDate) renderTimeSlots(selectedDate);
+  }
+}
+
+// ===== 日曆 =====
+let calYear, calMonth;
+function initCalendar() {
+  calYear  = today.getFullYear();
+  calMonth = today.getMonth();
+  renderCalendar();
+  document.getElementById("cal-prev").onclick = () => {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    renderCalendar();
   };
+  document.getElementById("cal-next").onclick = () => {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  };
+}
 
-  // 設定日期最小值為今天
-  document.getElementById("date").min = new Date().toISOString().split("T")[0];
+function renderCalendar() {
+  const prevBtn = document.getElementById("cal-prev");
+  prevBtn.disabled = (calYear === today.getFullYear() && calMonth === today.getMonth());
+  document.getElementById("cal-title").textContent = `${calYear} 年 ${calMonth + 1} 月`;
 
-  // 類別切換 → 動態載入服務項目
-  document.getElementById("category").addEventListener("change", function () {
-    const serviceSelect = document.getElementById("service");
-    const tag = document.getElementById("service-tag");
-    const val = this.value;
+  const grid = document.getElementById("cal-grid");
+  grid.innerHTML = "";
 
-    if (val && SERVICES[val]) {
-      const { label, tagClass, items } = SERVICES[val];
-      serviceSelect.innerHTML = `<option value="">請選擇${label}項目</option>`;
-      items.forEach(item => {
-        const opt = document.createElement("option");
-        opt.value = item;
-        opt.textContent = item;
-        serviceSelect.appendChild(opt);
-      });
-      serviceSelect.disabled = false;
-      tag.textContent = label;
-      tag.className = `service-tag ${tagClass}`;
-      tag.style.display = "inline-block";
-    } else {
-      serviceSelect.innerHTML = "<option value=''>請先選擇服務類別</option>";
-      serviceSelect.disabled = true;
-      tag.style.display = "none";
-    }
+  // 星期標題（週一為第一天）
+  ["一","二","三","四","五","六","日"].forEach(d => {
+    const el = document.createElement("div");
+    el.className = "cal-day-label";
+    el.textContent = d;
+    grid.appendChild(el);
   });
 
-  // 表單送出
-  document.getElementById("booking-form").addEventListener("submit", async function (e) {
-    e.preventDefault();
-    const form = e.target;
-    const statusDiv = document.getElementById("form-status");
-    const submitBtn = form.querySelector(".submit-btn");
+  // 空格補位
+  const firstDay = new Date(calYear, calMonth, 1);
+  let offset = firstDay.getDay();
+  offset = (offset === 0) ? 6 : offset - 1;
+  for (let i = 0; i < offset; i++) {
+    const el = document.createElement("div");
+    el.className = "cal-day cal-empty";
+    grid.appendChild(el);
+  }
 
-    statusDiv.textContent = "傳送中...";
-    statusDiv.style.color = "#4e8ef7";
-    submitBtn.disabled = true;
+  // 日期格
+  const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+  for (let d = 1; d <= daysInMonth; d++) {
+    const el = document.createElement("div");
+    el.className = "cal-day";
+    el.textContent = d;
+    const dateStr = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayDate = new Date(calYear, calMonth, d);
 
-    const name     = document.getElementById("name").value.trim();
-    const email    = document.getElementById("email").value.trim();
-    const phone    = document.getElementById("phone").value.trim();
-    const catVal   = document.getElementById("category").value;
-    const category = SERVICES[catVal]?.label || catVal;
-    const service  = document.getElementById("service").value;
-    const date     = document.getElementById("date").value;
-    const time     = document.getElementById("time").value;
-    const notes    = document.getElementById("notes").value.trim() || "無";
+    if (dayDate < today) {
+      el.classList.add("cal-past");
+    } else {
+      if (dayDate.getTime() === today.getTime()) el.classList.add("cal-today");
 
-    // 產生 Google Calendar 連結（瀏覽器本地時間，台灣時區正確）
-    const startTime = new Date(`${date}T${time}:00`);
-    const endTime   = new Date(startTime.getTime() + 90 * 60 * 1000); // 預設 90 分鐘
-    const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+      // 是否全滿
+      if (slotsReady) {
+        const bookedCount = ALL_SLOTS.filter(s => bookedSet.has(`${dateStr}_${s}`)).length;
+        if (bookedCount === ALL_SLOTS.length) {
+          el.classList.add("cal-full");
+        } else if (bookedCount > 0) {
+          el.classList.add("cal-has-booking");
+        }
+      }
 
-    const gcalText    = encodeURIComponent(`預約 ${category}：${name}`);
-    const gcalDetails = encodeURIComponent(
-      `服務：${category} - ${service}\n姓名：${name}\n電話：${phone}\n信箱：${email}\n備註：${notes}`
-    );
-    const gcalLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalText}&dates=${fmt(startTime)}/${fmt(endTime)}&details=${gcalDetails}`;
+      if (dateStr === selectedDate) el.classList.add("cal-selected");
+      el.onclick = () => selectDate(dateStr);
+    }
+    grid.appendChild(el);
+  }
+}
 
-    // 日期格式化顯示
-    const dateDisplay = new Date(`${date}T00:00:00`).toLocaleDateString("zh-TW", {
-      year: "numeric", month: "long", day: "numeric", weekday: "short"
+function selectDate(dateStr) {
+  selectedDate = dateStr;
+  selectedTime = null;
+  renderCalendar();
+  renderTimeSlots(dateStr);
+  document.getElementById("form-step").classList.remove("visible");
+}
+
+// ===== 時段格 =====
+function renderTimeSlots(dateStr) {
+  const container = document.getElementById("slots-container");
+  if (!slotsReady) {
+    container.innerHTML = '<div class="slots-placeholder">讀取可用時段中…</div>';
+    return;
+  }
+
+  const grid = document.createElement("div");
+  grid.className = "slots-grid";
+
+  ALL_SLOTS.forEach(slot => {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "slot-btn";
+
+    const hour       = parseInt(slot);
+    const isBooked   = bookedSet.has(`${dateStr}_${slot}`);
+    const isSurcharge = hour >= SURCHARGE_HOUR;
+
+    btn.innerHTML = `<span>${slot}</span>`;
+
+    if (isSurcharge) {
+      const badge = document.createElement("span");
+      badge.className = "slot-surcharge";
+      badge.textContent = `+NT$${SURCHARGE_AMOUNT}`;
+      btn.appendChild(badge);
+    }
+
+    if (isBooked) {
+      btn.disabled = true;
+      const label = document.createElement("span");
+      label.className = "slot-booked";
+      label.textContent = "已預約";
+      btn.appendChild(label);
+    } else {
+      if (slot === selectedTime) btn.classList.add("selected");
+      btn.onclick = () => selectTime(slot, isSurcharge);
+    }
+    grid.appendChild(btn);
+  });
+
+  container.innerHTML = "";
+  container.appendChild(grid);
+}
+
+function selectTime(slot, isSurcharge) {
+  selectedTime = slot;
+  renderTimeSlots(selectedDate);
+
+  // 更新摘要並顯示表單
+  const d = new Date(selectedDate + "T00:00:00");
+  const dateDisplay = d.toLocaleDateString("zh-TW", {
+    year: "numeric", month: "long", day: "numeric", weekday: "short"
+  });
+
+  let summaryHtml = `📅 <strong>${dateDisplay}</strong>&nbsp;&nbsp;🕐 <strong>${slot}</strong>`;
+  if (isSurcharge) {
+    summaryHtml += `<br><span class="surcharge-notice">⚠️ 此時段加收 NT$${SURCHARGE_AMOUNT} 加班費</span>`;
+  }
+  document.getElementById("selected-summary").innerHTML = summaryHtml;
+
+  const formStep = document.getElementById("form-step");
+  formStep.classList.add("visible");
+  setTimeout(() => formStep.scrollIntoView({ behavior: "smooth", block: "nearest" }), 50);
+}
+
+// ===== 服務選單 =====
+document.getElementById("category").addEventListener("change", function () {
+  const serviceSelect = document.getElementById("service");
+  const tag = document.getElementById("service-tag");
+  const val = this.value;
+
+  if (val && SERVICES[val]) {
+    const { label, tagClass, items } = SERVICES[val];
+    serviceSelect.innerHTML = `<option value="">請選擇${label}項目</option>`;
+    items.forEach(item => {
+      const opt = document.createElement("option");
+      opt.value = item; opt.textContent = item;
+      serviceSelect.appendChild(opt);
+    });
+    serviceSelect.disabled = false;
+    tag.textContent = label;
+    tag.className = `service-tag ${tagClass}`;
+    tag.style.display = "inline-block";
+  } else {
+    serviceSelect.innerHTML = "<option value=''>請先選擇服務類別</option>";
+    serviceSelect.disabled = true;
+    tag.style.display = "none";
+  }
+});
+
+// ===== 送出預約 =====
+document.getElementById("booking-form").addEventListener("submit", async function (e) {
+  e.preventDefault();
+  const statusDiv = document.getElementById("form-status");
+  const submitBtn = this.querySelector(".submit-btn");
+
+  if (!selectedDate || !selectedTime) {
+    statusDiv.textContent = "請先選擇日期與時段！";
+    statusDiv.style.color = "#f44336";
+    return;
+  }
+
+  statusDiv.textContent = "傳送中…";
+  statusDiv.style.color = "#4e8ef7";
+  submitBtn.disabled = true;
+
+  const name     = document.getElementById("name").value.trim();
+  const email    = document.getElementById("email").value.trim();
+  const phone    = document.getElementById("phone").value.trim();
+  const catVal   = document.getElementById("category").value;
+  const category = SERVICES[catVal]?.label || catVal;
+  const service  = document.getElementById("service").value;
+  const notes    = document.getElementById("notes").value.trim() || "無";
+  const hour     = parseInt(selectedTime);
+  const hasSurcharge = hour >= SURCHARGE_HOUR;
+  const surchargeText = hasSurcharge ? `是（+NT$${SURCHARGE_AMOUNT}）` : "否";
+
+  // Google Calendar 連結
+  const startTime = new Date(`${selectedDate}T${selectedTime}:00`);
+  const endTime   = new Date(startTime.getTime() + SLOT_MINS * 60 * 1000);
+  const fmt = (d) => d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+  const gcalText    = encodeURIComponent(`預約 ${category}：${name}`);
+  const gcalDetails = encodeURIComponent(
+    `服務：${category} - ${service}\n姓名：${name}\n電話：${phone}\n信箱：${email}${hasSurcharge ? `\n⚠️ 加班費：NT$${SURCHARGE_AMOUNT}` : ''}\n備註：${notes}`
+  );
+  const gcalLink = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${gcalText}&dates=${fmt(startTime)}/${fmt(endTime)}&details=${gcalDetails}`;
+
+  const dateDisplay = new Date(`${selectedDate}T00:00:00`).toLocaleDateString("zh-TW", {
+    year: "numeric", month: "long", day: "numeric", weekday: "short"
+  });
+
+  // 1. 寫入 Google Sheets
+  if (APPS_SCRIPT_URL && APPS_SCRIPT_URL !== "YOUR_APPS_SCRIPT_URL") {
+    try {
+      const params = new URLSearchParams({
+        action: "book",
+        date: selectedDate, time: selectedTime,
+        name, phone, email, category, service, notes
+      });
+      const res  = await fetch(`${APPS_SCRIPT_URL}?${params}`);
+      const data = await res.json();
+      if (data.success) {
+        bookedSet.add(`${selectedDate}_${selectedTime}`);
+        renderCalendar(); // 重新渲染（可能變全滿）
+      }
+    } catch (err) {
+      console.warn("Google Sheets 寫入失敗：", err);
+    }
+  }
+
+  // 2. EmailJS 通知
+  try {
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      name, email, phone, category, service,
+      date: dateDisplay, time: selectedTime,
+      surcharge: surchargeText,
+      notes, gcal_link: gcalLink,
     });
 
-    const templateParams = {
-      name, email, phone,
-      category, service,
-      date: dateDisplay,
-      time,
-      notes,
-      gcal_link: gcalLink,
-    };
+    statusDiv.innerHTML = "✅ 預約申請已送出！我們會盡快與您確認。";
+    statusDiv.style.color = "#4caf50";
+    this.reset();
+    document.getElementById("service").disabled = true;
+    document.getElementById("service-tag").style.display = "none";
+    selectedTime = null;
+    renderTimeSlots(selectedDate);
+    document.getElementById("form-step").classList.remove("visible");
+  } catch (err) {
+    console.error("EmailJS 發送失敗：", err);
+    statusDiv.textContent = "傳送失敗，請稍後再試。";
+    statusDiv.style.color = "#f44336";
+  } finally {
+    submitBtn.disabled = false;
+  }
+});
 
-    try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams);
-      statusDiv.innerHTML = "✅ 預約申請已送出！我們會盡快與您確認預約時間。";
-      statusDiv.style.color = "#4caf50";
-      form.reset();
-      document.getElementById("service").disabled = true;
-      document.getElementById("service-tag").style.display = "none";
-    } catch (err) {
-      console.error("EmailJS error:", err);
-      statusDiv.textContent = "傳送失敗，請稍後再試或直接聯絡我們。";
-      statusDiv.style.color = "#f44336";
-    } finally {
-      submitBtn.disabled = false;
-    }
-  });
+// ===== 初始化 =====
+initCalendar();
+loadBookedSlots();
 </script>
 {{ end }}
