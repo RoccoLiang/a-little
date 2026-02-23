@@ -1,6 +1,6 @@
 baseURL = 'https://a-little.pages.dev/'
 languageCode = 'zh-tw'
-title = '線上預約系統'
+title = 'a little 私藏手作'
 theme = 'PaperMod'
 
 [markup]

@@ -1,5 +1,5 @@
 +++
-title = '線上預約'
+title = 'a little 私藏手作美學'
 date = 2026-02-21T00:00:00+08:00
 draft = false
 +++
@@ -92,7 +92,7 @@ draft = false
 </style>
 
 <div class="booking-wrapper">
-  <h2>線上預約</h2>
+  <h2>a little 私藏手作美學線上預約</h2>
   <p class="subtitle">歡迎填寫預約表單，我們收到申請後會盡快確認並回覆。</p>
 
   <form id="booking-form">
